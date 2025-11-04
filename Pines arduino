@@ -17,5 +17,5 @@ A0:HEARTBEAT         5:BOTONERA
 A1:TEMPERATURAao 028 4:BOTONERA
 A2:                  3:BOTONERA
 A3:                  2:
-A4:Protoboard(SDA DISPLAY I2C y Display OLED)   TX 1:   
-A5:Protoboard(SCL DISPLAY I2C y Display OLED)   RX 0:
+A4:Protoboard(SDA DISPLAY I2C y Display OLED)"+"   TX 1:   
+A5:Protoboard(SCL DISPLAY I2C y Display OLED)"-"   RX 0:
