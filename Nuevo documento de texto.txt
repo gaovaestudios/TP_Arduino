@@ -1,7 +1,0 @@
-https://naylampmechatronics.com/oled/1039-display-oled-i2c-091-12832-ssd1306-azul.html
-
-display led datasheets
-
-https://www.handsontec.com/dataspecs/module/I2C_1602_LCD.pdf
-
-led grande
