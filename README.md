@@ -113,23 +113,33 @@ Al tener el medidor de pulso y temperatura conectado y con el código subido al 
 por la pantalla LCD las distintas opciones y el botón correspondiente para activar sus funciones.
 
 **Medición del ritmo cardiaco (BPM)**
+
 1- Oprima el botón 1 de la botonera para empezar la medición.
 
 2- Coloque el dedo indice entre el medidor infrarojo y el fototransistor.
 
 3- Asegurese que el dispositivo medidor se encuentre dentro de la cubertura proporcionada para resguardarlo lo mas posible de la luz exterior para una mejor medición.
+
 4- Mantenga el dedo quieto por 10 segundos para una lectura mas estable.
+
 5- Lea por la pantalla LCD su ritmo cardiaco.
+
 6- Oprima el botón 0 de la botonera para finalizar la lectura, o el botón 3 para un pequeño easter egg.
 
+
 **Medición de temperatura**
+
 1- Mantenga apretado de antemano entre 2 dedos el sensor de medición de temperatura por 10 segundos para una mejor lectura.
+
 2- Oprima el botón 2 de la botonera para empezar la medición.
+
 3- Lea por la pantalla LCD su temperatura.
+
 
 ##Imágenes o video demostrativo
 
 ### :receipt: Licencia
 Este proyecto está licenciado bajo los términos de la **Licencia MIT**.  
 Podés ver el texto completo en el archivo [LICENSE](LICENSE).
+
 
