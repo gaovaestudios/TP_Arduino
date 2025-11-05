@@ -1,0 +1,564 @@
+CODIGO POSTA:
+//todo funciona perfecto, falta solo el display y modificar detalles del codigo
+
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+
+// --- LCD I2C ---
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Cambia a 0x3F si no se ve nada
+
+// --- Keypad 4x4 ---
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+byte rowPins[ROWS] = {10, 9, 8, 7};
+byte colPins[COLS] = {6, 5, 4, 3};
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+// --- Pines ---
+int bpmPin = A0;
+int tempPin = A1;
+int buzzer = 12;
+
+// --- Sensor BPM ---
+#define samp_siz 4
+#define rise_threshold 5
+bool sensorActivo = false;
+
+// --- Variables del sensor BPM ---
+float reads[samp_siz];
+float sum, last, reader, before = 0;
+bool rising = false;
+int rise_count = 0;
+float first = 0, second = 0, third = 0;
+float print_value = 0, lastBPM = 0;
+unsigned long last_beat = 0, lastPrint = 0;
+const unsigned long interval = 3000;
+
+// --- Estado del menú ---
+enum Estado { MENU, SENSOR, TEMP };
+Estado estadoActual = MENU;
+
+// --- FUNCIONES ---
+void mostrarMenu();
+void manejarMenu(char key);
+void iniciarSensor();
+void medirBPM();
+void apagarSensor();
+void beepTresSegundos();
+void probarTemperatura();
+
+// --- MAPEO CON DECIMALES ---
+float mapFloat(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(buzzer, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  mostrarMenu();
+}
+
+void loop() {
+  char key = keypad.getKey();
+
+  if (key) {
+    Serial.print("Tecla presionada: ");
+    Serial.println(key);
+
+    if (estadoActual == MENU) {
+      manejarMenu(key);
+    } 
+    else if (estadoActual == SENSOR && key == '0') {
+      apagarSensor();
+    } 
+    else if (estadoActual == TEMP && key == '0') {
+      mostrarMenu();
+    }
+  }
+
+  if (estadoActual == SENSOR && sensorActivo) {
+    medirBPM();
+  }
+}
+
+// --- Mostrar menú principal ---
+void mostrarMenu() {
+  estadoActual = MENU;
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("1) BPM 2) Temp");
+  lcd.setCursor(0, 1);
+  lcd.print("3) Beep  0)Off");
+}
+
+// --- Manejo del menú ---
+void manejarMenu(char key) {
+  switch (key) {
+    case '1':
+      iniciarSensor();   // Mide BPM
+      break;
+
+    case '2':
+      probarTemperatura();  // Mide temperatura
+      break;
+
+    case '3':
+      beepTresSegundos();   // Beep 3 segundos
+      break;
+
+    case '0':
+      apagarSensor();       // Apagar
+      break;
+
+    default:
+      lcd.clear();
+      lcd.print("Opcion invalida");
+      delay(1000);
+      mostrarMenu();
+      break;
+  }
+}
+
+// --- Iniciar sensor BPM ---
+void iniciarSensor() {
+  lcd.clear();
+  lcd.print("Iniciando sensor");
+  delay(1000);
+  lcd.clear();
+  lcd.print("Midiendo BPM...");
+  sensorActivo = true;
+  estadoActual = SENSOR;
+  
+  for (int i = 0; i < samp_siz; i++) reads[i] = 0;
+  sum = 0; rising = false; rise_count = 0;
+  first = second = third = 0;
+  before = 0; lastBPM = 0;
+  lastPrint = millis();
+}
+
+// --- Medir BPM (bucle continuo) ---
+void medirBPM() {
+  static int ptr = 0;
+  long now, start;
+  int n = 0;
+  float reader_local;
+
+  start = millis();
+  reader_local = 0;
+  do {
+    reader_local += analogRead(bpmPin);
+    n++;
+    now = millis();
+  } while (now < start + 20);
+  reader_local /= n;
+
+  sum -= reads[ptr];
+  sum += reader_local;
+  reads[ptr] = reader_local;
+  last = sum / samp_siz;
+  ptr++;
+  if (ptr >= samp_siz) ptr = 0;
+
+  if (last > before) {
+    rise_count++;
+    if (!rising && rise_count > rise_threshold) {
+      rising = true;
+      first = millis() - last_beat;
+      last_beat = millis();
+      print_value = 60000. / (0.4 * first + 0.3 * second + 0.3 * third);
+      third = second;
+      second = first;
+
+      if (print_value >= 40 && print_value <= 100) {
+        lastBPM = print_value;
+      }
+    }
+  } else {
+    rising = false;
+    rise_count = 0;
+  }
+
+  before = last;
+
+  if (millis() - lastPrint >= interval) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    if (lastBPM > 0) {
+      lcd.print("BPM: ");
+      lcd.print(lastBPM, 0);
+      tone(buzzer, 1000, 200);
+    } else {
+      lcd.print("Esperando senal");
+    }
+    lastPrint = millis();
+  }
+}
+
+// --- Apagar sensor ---
+void apagarSensor() {
+  sensorActivo = false;
+  lcd.clear();
+  lcd.print("...");
+  noTone(buzzer);
+  delay(1000);
+  mostrarMenu();
+}
+
+// --- Beep de 3 segundos ---
+void beepTresSegundos() {
+  lcd.clear();
+  lcd.print("Beep 3 segundos");
+  tone(buzzer, 1000);
+  delay(3000);
+  noTone(buzzer);
+  mostrarMenu();
+}
+
+// --- Probar temperatura ---
+void probarTemperatura() {
+  estadoActual = TEMP;
+  lcd.clear();
+  lcd.print("Leyendo Temp...");
+  Serial.println("\n--- Prueba de temperatura ---");
+
+  const int numLecturas = 10;
+  long suma = 0;
+
+  for (int i = 0; i < numLecturas; i++) {
+    suma += analogRead(tempPin);
+    delay(100);
+  }
+
+  float promedio = suma / (float)numLecturas;
+  float temperatura = mapFloat(promedio, 119, 114, 36, 37);
+
+  Serial.print("Promedio analogico: ");
+  Serial.print(promedio, 1);
+  Serial.print("  |  Temperatura: ");
+  Serial.print(temperatura, 2);
+  Serial.println(" °C");
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Temp Prom:");
+  lcd.setCursor(0, 1);
+  lcd.print(temperatura, 2);
+  lcd.print(" C");
+
+  delay(3000);
+  mostrarMenu();
+}
+
+COMPONENTES:
+
+ Componentes utlizados:
+-1 Protoboard
+-1 Arduino uno
+-1 Sensor de pulso KY-039 o KY-039 (BPM)
+-1 Sensor de temperatura KY-028
+-1 Pantalla LCD 16x2 con módulo I2C
+-1 Teclado matricial 4x4 (Keypad)
+-1 Zumbador (Buzzer)
+-1 display Oled 0.9 pulgadas
+-Cables varios
+
+CODIGO COMPUESTO V2:#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// --- OLED 0.91 (128x32) ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+#define OLED_RESET -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// --- LCD I2C ---
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Cambia a 0x3F si no se ve nada
+
+// --- Keypad 4x4 ---
+const byte ROWS = 4;
+const byte COLS = 4;
+char keys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+byte rowPins[ROWS] = {10, 9, 8, 7};
+byte colPins[COLS] = {6, 5, 4, 3};
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+// --- Pines ---
+int bpmPin = A0;
+int tempPin = A1;
+int buzzer = 12;
+
+// --- Sensor BPM ---
+#define samp_siz 4
+#define rise_threshold 5
+bool sensorActivo = false;
+
+// --- Variables del sensor BPM ---
+float reads[samp_siz];
+float sum, last, reader, before = 0;
+bool rising = false;
+int rise_count = 0;
+float first = 0, second = 0, third = 0;
+float print_value = 0, lastBPM = 0;
+unsigned long last_beat = 0, lastPrint = 0;
+const unsigned long interval = 3000;
+
+// --- Estado del menú ---
+enum Estado { MENU, SENSOR, TEMP };
+Estado estadoActual = MENU;
+
+// --- FUNCIONES ---
+void mostrarMenu();
+void manejarMenu(char key);
+void iniciarSensor();
+void medirBPM();
+void apagarSensor();
+void beepTresSegundos();
+void probarTemperatura();
+void mostrarLineaOLED();
+
+// --- MAPEO CON DECIMALES ---
+float mapFloat(float x, float in_min, float in_max, float out_min, float out_max) {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(buzzer, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  mostrarMenu();
+
+  // --- Inicializar OLED ---
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("OLED no encontrado");
+  } else {
+    display.clearDisplay();
+    display.display();
+  }
+}
+
+void loop() {
+  char key = keypad.getKey();
+
+  if (key) {
+    Serial.print("Tecla presionada: ");
+    Serial.println(key);
+
+    if (estadoActual == MENU) {
+      manejarMenu(key);
+    } 
+    else if (estadoActual == SENSOR && key == '0') {
+      apagarSensor();
+    } 
+    else if (estadoActual == TEMP && key == '0') {
+      mostrarMenu();
+    }
+  }
+
+  if (estadoActual == SENSOR && sensorActivo) {
+    medirBPM();
+  }
+}
+
+// --- Mostrar menú principal ---
+void mostrarMenu() {
+  estadoActual = MENU;
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("1) BPM 2) Temp");
+  lcd.setCursor(0, 1);
+  lcd.print("3) Beep  0)Off");
+  display.clearDisplay();
+  display.display();
+}
+
+// --- Manejo del menú ---
+void manejarMenu(char key) {
+  switch (key) {
+    case '1':
+      iniciarSensor();   // Mide BPM
+      break;
+
+    case '2':
+      probarTemperatura();  // Mide temperatura
+      break;
+
+    case '3':
+      beepTresSegundos();   // Beep 3 segundos
+      break;
+
+    case '0':
+      apagarSensor();       // Apagar
+      break;
+
+    default:
+      lcd.clear();
+      lcd.print("Opcion invalida");
+      delay(1000);
+      mostrarMenu();
+      break;
+  }
+}
+
+// --- Iniciar sensor BPM ---
+void iniciarSensor() {
+  lcd.clear();
+  lcd.print("Iniciando sensor");
+  delay(1000);
+  lcd.clear();
+  lcd.print("Midiendo BPM...");
+  sensorActivo = true;
+  estadoActual = SENSOR;
+  
+  for (int i = 0; i < samp_siz; i++) reads[i] = 0;
+  sum = 0; rising = false; rise_count = 0;
+  first = second = third = 0;
+  before = 0; lastBPM = 0;
+  lastPrint = millis();
+
+  mostrarLineaOLED();  // Mostrar línea al iniciar
+}
+
+// --- Medir BPM (bucle continuo) ---
+void medirBPM() {
+  static int ptr = 0;
+  long now, start;
+  int n = 0;
+  float reader_local;
+
+  start = millis();
+  reader_local = 0;
+  do {
+    reader_local += analogRead(bpmPin);
+    n++;
+    now = millis();
+  } while (now < start + 20);
+  reader_local /= n;
+
+  sum -= reads[ptr];
+  sum += reader_local;
+  reads[ptr] = reader_local;
+  last = sum / samp_siz;
+  ptr++;
+  if (ptr >= samp_siz) ptr = 0;
+
+  if (last > before) {
+    rise_count++;
+    if (!rising && rise_count > rise_threshold) {
+      rising = true;
+      first = millis() - last_beat;
+      last_beat = millis();
+      print_value = 60000. / (0.4 * first + 0.3 * second + 0.3 * third);
+      third = second;
+      second = first;
+
+      if (print_value >= 40 && print_value <= 100) {
+        lastBPM = print_value;
+      }
+    }
+  } else {
+    rising = false;
+    rise_count = 0;
+  }
+
+  before = last;
+
+  if (millis() - lastPrint >= interval) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    if (lastBPM > 0) {
+      lcd.print("BPM: ");
+      lcd.print(lastBPM, 0);
+      tone(buzzer, 1000, 200);
+    } else {
+      lcd.print("Esperando senal");
+    }
+    lastPrint = millis();
+  }
+
+  mostrarLineaOLED(); // Mantiene la línea recta visible
+}
+
+// --- Apagar sensor ---
+void apagarSensor() {
+  sensorActivo = false;
+  lcd.clear();
+  lcd.print("...");
+  noTone(buzzer);
+  display.clearDisplay();
+  display.display();
+  delay(1000);
+  mostrarMenu();
+}
+
+// --- Beep de 3 segundos ---
+void beepTresSegundos() {
+  lcd.clear();
+  lcd.print("Beep 3 segundos");
+  tone(buzzer, 1000);
+  delay(3000);
+  noTone(buzzer);
+  mostrarMenu();
+}
+
+// --- Probar temperatura ---
+void probarTemperatura() {
+  estadoActual = TEMP;
+  lcd.clear();
+  lcd.print("Leyendo Temp...");
+  Serial.println("\n--- Prueba de temperatura ---");
+
+  const int numLecturas = 10;
+  long suma = 0;
+
+  for (int i = 0; i < numLecturas; i++) {
+    suma += analogRead(tempPin);
+    delay(100);
+  }
+
+  float promedio = suma / (float)numLecturas;
+  float temperatura = mapFloat(promedio, 119, 114, 36, 37);
+
+  Serial.print("Promedio analogico: ");
+  Serial.print(promedio, 1);
+  Serial.print("  |  Temperatura: ");
+  Serial.print(temperatura, 2);
+  Serial.println(" °C");
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Temp Prom:");
+  lcd.setCursor(0, 1);
+  lcd.print(temperatura, 2);
+  lcd.print(" C");
+
+  delay(3000);
+  mostrarMenu();
+}
+
+// --- Dibuja una línea recta en el OLED ---
+void mostrarLineaOLED() {
+  display.clearDisplay();
+  display.drawLine(0, 16, 127, 16, SSD1306_WHITE);  // línea horizontal en el medio
+  display.display();
+}
+
