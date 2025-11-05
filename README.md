@@ -128,13 +128,15 @@ por la pantalla LCD las distintas opciones y el botón correspondiente para acti
 
 ## Imágenes o video demostrativo
 
-### :receipt: Licencia
-Este proyecto está licenciado bajo los términos de la **Licencia MIT**.  \
-Podés ver el texto completo en el archivo [LICENSE](LICENSE).\
+## :receipt: Licencia
 
-### Creditos
-Proyecto desarrollado como trabajo final de la materia Laboratorio de Computación I,\
-en la Universidad Nacional de San Martín UNSAM, año 2025.\
+Este proyecto está licenciado bajo los términos de la **Licencia MIT**.
+Podés ver el texto completo en el archivo [LICENSE](LICENSE).
+
+## Creditos
+
+Proyecto desarrollado como trabajo final de la materia Laboratorio de Computación I,
+en la Universidad Nacional de San Martín UNSAM, año 2025.
 
 Agradecimientos especiales:
 
@@ -160,3 +162,4 @@ A los programas utilizados:
 · Github
 
 A la comunidad de código abierto por los ejemplos, librerías empleadas y las Datasheets consultadas.
+
