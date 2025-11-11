@@ -14,35 +14,41 @@ El sistema comienza con un menú principal interactivo que muestra en el LCD dis
  En conjunto, el proyecto permite al usuario realizar mediciones básicas de salud y comprobar el funcionamiento del sistema de manera práctica y visual.\
 
 ## Requisitos funcionales cumplidos
-.Manejo de interfaz de usuario con teclado matricial: El sistema reconoce las teclas presionadas y ejecuta acciones segun el modo activo.\
-.Menú en pantalla Led: Se muestra un menú claro e intuitivo que permite acceder a las distintas funcionalidades.\
-.Medicion de la frecuencia cardiaca(BPM): El sistema lee los valores capturados por el sensor de pulso, detecta flancos ascendentes, calcula los intervalos entre latidos y muestra el valor promedio de BPM en pantalla.\
-.Medicion de temperatura corporal: El dispositivo obtiene varias lecturas del sensor de temperatura, calcula su promedio y muestra el valor correspondiente en grados Celsius.\
-.Emisión de alertas (Beep): Se genera un tono continuo de tres segundos simulando la detencion del pulso y sonidos breves con cada detección de pulso válida.\
-.Gestion del sistema: Se maneja un flujo de trabajo ordenado y modularizado con funciones.\
-.Visualizacion clara en pantalla: El Oled muestra mensajes informativos y los resultados de cada medición de manera legible.\
+**Control de Entradas y Salidas:** El sistema controla múltiples entradas y salidas, tanto digitales como analógicas:\
+  -Entradas digitales: se utilizan las teclas del keypad 4x4, conectadas a los pines digitales 3 al 10, que permiten la interacción con el usuario para seleccionar funciones (medir BPM, medir temperatura, emitir sonido o apagar).\
+  -Entradas analógicas: se emplean los pines A0 (sensor de BPM) y A1 (sensor de temperatura), los cuales permiten leer valores analógicos que luego son procesados.\
+  -Salidas digitales: se controla el buzzer (pin 12) y el display LCD I2C, que muestran resultados o emiten alertas sonoras.\
+**Contador de Flancos:** El sistema incorpora un contador de flancos dentro de la función medirBPM(). Allí se detectan los cambios en la señal analógica del sensor de pulso (BPM), simulando la detección de flancos ascendentes.\
+**Control Lógico por Tiempo:** El programa utiliza varios temporizadores basados en la función millis() y en retardos (delay()) para manejar tiempos y comportamientos:\
+En medirBPM() se usa millis() para calcular el tiempo entre pulsos (first = millis() - last_beat;) y para actualizar el LCD cada 3 segundos (if (millis() - lastPrint >= interval)).\
+En otras funciones (iniciarSensor(), beepTresSegundos(), probarTemperatura()) se usan retardos controlados para mostrar mensajes o ejecutar tareas temporizadas.\
+**Control Lógico por Máquina de Estados:** El sistema implementa una máquina de estados finita (FSM) utilizando un enum llamado Estado. Los estados principales son:\
+MENU: estado inicial donde se muestran las opciones disponibles.\
+SENSOR: estado en el que se mide el ritmo cardíaco (BPM).\
+TEMP: estado en el que se mide la temperatura.\
+Todas estas transiciones dependen de las entradas del usuario en el keypad. El flujo de control está gobernado por el valor de estadoActual, y el loop() ejecuta las funciones correspondientes a cada estado, de este modo, el comportamiento del sistema depende tanto del estado actual como de las entradas recibidas.
 
 ## Componentes utilizados
 **Componente:** Arduino UNO\
-**Descripción:** Microcontrolador principal, ejecuta el programa y coordina todos los periféricos.\
+**Descripción:** Microcontrolador principal, ejecuta el programa y coordina todos los periféricos.
 
 **Componente:** Pantalla LCD 16x2 con módulo I2C y Oled 0.9 pulgadas\
-**Descripción:** Display alfanumérico, muestra el menú, mensajes y resultados de las mediciones.\
+**Descripción:** Display alfanumérico, muestra el menú, mensajes y resultados de las mediciones.
 
 **Componente:** Teclado matricial 4x4\
-**Descripción:** Módulo de entrada, permite la interacción del usuario mediante teclas numéricas y de control.\
+**Descripción:** Módulo de entrada, permite la interacción del usuario mediante teclas numéricas y de control.
 
 **Componente:** Sensor de pulso KY-039\
-**Descripción:** Sensor analógico, detecta variaciones en la señal del pulso para calcular la frecuencia cardíaca.\
+**Descripción:** Sensor analógico, detecta variaciones en la señal del pulso para calcular la frecuencia cardíaca.
 
 **Componente:** Sensor de temperatura KY-028\
-**Descripción:** Sensor analógico lineal, mide la temperatura corporal aproximada del usuario.\
+**Descripción:** Sensor analógico lineal, mide la temperatura corporal aproximada del usuario.
 
 **Componente:** Buzzer\
-**Descripción:** Elemento sonoro, emite tonos de alerta y señales sonoras.\
+**Descripción:** Elemento sonoro, emite tonos de alerta y señales sonoras.
 
 **Componente:** Cables varios\
-**Descripción:** Elementos de conexión, permiten interconectar todos los componentes del circuito.\
+**Descripción:** Elementos de conexión, permiten interconectar todos los componentes del circuito.
 
 ## Esquema Eléctrico
 
@@ -163,6 +169,7 @@ A los programas utilizados:
 · Github
 
 A la comunidad de código abierto por los ejemplos, librerías empleadas y las Datasheets consultadas.
+
 
 
 
