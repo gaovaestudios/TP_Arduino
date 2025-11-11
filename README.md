@@ -5,12 +5,12 @@
                     **LABORATORIO DE COMPUTACIÓN I**
 
 ## Descripción general y funcionalidades
-El grupo diseñó un sistema con interfaz de usuario diseñado en arduino, el cual se maneja mediante un teclado matricial 4x4 y una Pantalla LCD 16x2 con módulo I2C que permite al usuaio interactuar con distintas funciones médicas para testear, entre ellas, lectura de temperatura(grados), la medición de frecuencia cardiaca(BPM), y la activacion de un zumbador(Buzzer) para cortar el ritmo cardiaco a modo ilustrativo y un Oled que grafica el pulso.\
+El grupo diseñó un sistema con interfaz de usuario diseñado en arduino, el cual se maneja mediante un teclado matricial 4x4 y una Pantalla LCD 16x2 con módulo I2C que permite al usuaio hacer lecturas medicas de temperatura(grados) y la medición de frecuencia cardiaca(BPM), y la activacion de un zumbador(Buzzer) para cortar el ritmo cardiaco a modo ilustrativo y un Oled que grafica el pulso.\
 Se elaboró un prototipo de monitor básico, capaz de medir señales vitales y permite mostrar el resultado por pantalla, combinando lecturas analógicas de sensores, procesamiento digital de señales, y retroalimentación visual y sonora.\
 El sistema comienza con un menú principal interactivo que muestra en el LCD distintas funciones (1-Iniciar sensor BPM, 2-Medir temperatura, 3-Beep 3 segudos, 0-Volver) la cuales se seleccionan mediante el keypad para que se realice el envío de datos al monitor serial para verificación y depuración de las lecturas.\
  1-Medicion frecuencia cardiaca (BPM): Utiliza un sensor analogico de pulso KY-039 y realiza una lectura analógica del sensor de pulso, detección de flancos ascendentes y cálculo del ritmo cardíaco en BPM.\
  2-Medicion de temperatura: Utiliza un sensor de temperatura KY-028 para capturar la información y sacar el promedio de 10 lecturas analogicas y su conversion a grados Celsius mediante un mapeo.\
- 3-Beep: Simula la detención del ritmo cardiaco mediante la emisión de un tono de de tres segundos.\
+ 3-Beep: Simula En forma de chiste la detención del ritmo cardiaco mediante la emisión de un tono de de tres segundos.\
  En conjunto, el proyecto permite al usuario realizar mediciones básicas de salud y comprobar el funcionamiento del sistema de manera práctica y visual.\
 
 ## Requisitos funcionales cumplidos
@@ -169,6 +169,7 @@ A los programas utilizados:
 · Github
 
 A la comunidad de código abierto por los ejemplos, librerías empleadas y las Datasheets consultadas.
+
 
 
 
